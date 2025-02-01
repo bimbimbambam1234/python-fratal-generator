@@ -1,39 +1,36 @@
-from tkinter import ttk
+import serial
+import cv2
+import numpy as np
 
-class FractalGenerator(tk.Tk):
+cap = cv2.VideoCapture(0)
+comPort = 'COM16'
+baudrate = 9600
+uno = serial.Serial(comPort,baudrate)
+low_red= (6,102,255)
+high_red= (255,255,255)
+low_green= (51,121,62)
+high_green= (84,255,255)
+low_blue= (64,0,255)
+high_blue= (114,255,204)
 
-    def __init__(self):
-        super().init()
-
-        self.title("Fractal Generator")
-        self.geometry("800*600")
-
-        self.size = 400
-        self.max_liter = 100
-        self.julia_c = complex(-0.4, 0.6)
-        self.tree_angle = 0.5
-        self.tree_ratio = 0.7
-
-    def setup_ui(self):
-        control_frame = ttk.Frame(self)
-        control_frame.pack(sede=tk.LEFT, fill=tk.Y ,padx=5 ,pady=5)                                    
-        ttk.Label(control_frame, text="Тип фракталу: ").pack(pady=5)
-        self.fractal_type = ttk.Combobox(control_frame, value=["Мандельброна", \
-            "Жюлія","Серпінського","Дерево"])
-        self.fractal_type.set("Мандельброна")
-        self.fractal_type.pack(pady=5)
-        self.fractal_type.bind('<<ComboboxSelecte>>' , self.on_fractal_change)
-        
-        ttk.Label(control_frame, text="Кількість ітерацій".pack(pady=5))
-        self.iter_slider = ttk.Scale(control_frame, from_=10,to=200, \
-             orient=tk.HORIZONTAL, value=100, command=self.on_param_change)
-        self.iter_slider.pack(pady=5)
-
-        self.julia_frame = ttk.LabelFrame(control_frame, text="Параметри Жулія")
-        self.julia_frame.pack(pady=5, fill=tk.X)
-
-        ttk.Label(self.julia_frame, text="Зеальна часимна c: ").pack()
-        self.julia_real = ttk.Scale(self.julia_frame, from_=-2 ,to=2, \
-            orient=tk.HORIZONTAL, value=0.6, command=self.on_param_change)
-        self.julia_real.pack()
-
+while True:
+    frame = cap.read()[1]
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask_green=cv2.inRange(frame,low_green,high_green)
+    mask_red=cv2.inRange(frame,low_red,high_red)
+    mask_blue=cv2.inRange(frame,low_blue,high_blue)
+    color_red=np.count_nonzero(mask_red)
+    color_green=np.count_nonzero(mask_green)
+    color_blue=np.count_nonzero(mask_blue)
+    if color_red>1000:
+        uno.write(b'1')
+    elif color_green>1000:
+        uno.write(b'2')
+    elif color_blue>1000:
+        uno.write(b'3')
+    else: uno.write(b'0')
+    cv2.imshow("mask_green", mask_green)
+    cv2.imshow("mask_red", mask_red)
+    cv2.imshow("mask_blue", mask_blue)
+    cv2.imshow("original", frame)
+    cv2.waitKey(1)
